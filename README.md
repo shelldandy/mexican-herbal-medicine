@@ -18,12 +18,14 @@ A Python scraper for the [UNAM Digital Library of Traditional Mexican Medicine](
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/herbolaria.git
    cd herbolaria
    ```
 
 2. Install Python dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -38,6 +40,7 @@ A Python scraper for the [UNAM Digital Library of Traditional Mexican Medicine](
 ### Basic Usage
 
 Scrape all sections:
+
 ```bash
 python -m scraper.main
 ```
@@ -63,21 +66,25 @@ options:
 ### Examples
 
 Scrape only the plants section:
+
 ```bash
 python -m scraper.main --section plants
 ```
 
 Test with a single letter (useful for testing):
+
 ```bash
 python -m scraper.main --section dictionary --letter a
 ```
 
 Scrape with visible browser (for debugging):
+
 ```bash
 python -m scraper.main --show-browser
 ```
 
 Adjust request delay:
+
 ```bash
 python -m scraper.main --delay 2.0
 ```
