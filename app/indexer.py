@@ -54,6 +54,41 @@ def detect_section(file_path: Path) -> str:
     return SECTION_MAP.get(top_dir, "unknown")
 
 
+def detect_subsection(file_path: Path) -> str:
+    """Detect subsection for files that have nested directories.
+
+    For example:
+    - plantas/por-nombre-botanico/sabila.md -> "botanical-name"
+    - plantas/por-nombre-popular/sabila.md -> "popular-name"
+    - plantas/hongos/hongo-x.md -> "fungi"
+    - diccionario/a/abortivo.md -> "" (letter is not a subsection)
+    """
+    relative = file_path.relative_to(DATA_DIR)
+    parts = relative.parts
+
+    # Need at least section/subsection/file.md
+    if len(parts) < 3:
+        return ""
+
+    top_dir = parts[0]
+    sub_dir = parts[1]
+
+    # Map subsections for plantas
+    if top_dir == "plantas":
+        subsection_map = {
+            "por-nombre-botanico": "botanical-name",
+            "por-nombre-popular": "popular-name",
+            "hongos": "fungi",
+        }
+        return subsection_map.get(sub_dir, sub_dir)
+
+    # For diccionario, the second level is just a letter, not a subsection
+    if top_dir == "diccionario" and len(sub_dir) == 1:
+        return ""
+
+    return ""
+
+
 def compute_file_hash(file_path: Path) -> str:
     """Compute MD5 hash of file contents for change detection."""
     return hashlib.md5(file_path.read_bytes()).hexdigest()
@@ -87,6 +122,7 @@ def load_documents(data_dir: Path = DATA_DIR) -> list[Document]:
         metadata, body = parse_frontmatter(content)
 
         section = detect_section(file_path)
+        subsection = detect_subsection(file_path)
         relative_path = str(file_path.relative_to(data_dir))
 
         letter_match = re.search(r"/([a-z])/", relative_path)
@@ -99,6 +135,10 @@ def load_documents(data_dir: Path = DATA_DIR) -> list[Document]:
             "source": metadata.get("source", ""),
             "letter": letter,
         }
+
+        # Add subsection if present
+        if subsection:
+            doc_metadata["subsection"] = subsection
 
         if "botanical_name" in metadata:
             doc_metadata["botanical_name"] = metadata["botanical_name"]

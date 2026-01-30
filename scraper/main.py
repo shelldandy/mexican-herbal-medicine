@@ -77,7 +77,12 @@ async def scrape_section(
         progress_file = progress_dir / "plants_progress.txt"
 
         if letter:
-            entries = await parser.get_all_plant_urls()
+            # Get plants by botanical name
+            entries = await parser.get_all_plant_urls(by_botanical=True)
+            # Also get plants by popular name
+            popular_entries = await parser.get_all_plant_urls(by_botanical=False)
+            entries.extend(popular_entries)
+
             entries = [e for e in entries if e["text"].lower().startswith(letter.lower())]
             for entry in entries:
                 await parser.scrape_entry(entry["url"], entry["subsection"])

@@ -42,35 +42,79 @@ class FloraParser:
         """
         Get all flora section URLs.
 
+        The flora monographs are listed on the introduction page (/fmim/introduccion.html).
+        Each flora entry links to a page like /fmim/flora_cochimi.html, /fmim/flora_maya.html, etc.
+
         Returns:
             List of dicts with 'url', 'text' keys
         """
         entries = []
         index_url = f"{BASE_URL}/fmim/"
+        intro_url = f"{BASE_URL}/fmim/introduccion.html"
 
-        logger.info("Scraping flora index")
+        logger.info("Scraping flora index and introduction page")
 
         try:
-            content = await self.browser.get_page_content(index_url)
+            # First, add the main index page
+            entries.append({
+                "url": index_url,
+                "text": "Introducción"
+            })
+
+            # Parse the introduction page to find all flora monograph links
+            content = await self.browser.get_page_content(intro_url)
             soup = BeautifulSoup(content, "lxml")
 
-            # Find all internal links in the flora section
+            # Find all links to flora pages
+            # Flora links follow patterns like: /fmim/flora_cochimi.html, /fmim/flora_maya.html
             for link in soup.find_all("a", href=True):
                 href = link.get("href", "")
-                if "/fmim/" in href and href != "/fmim/" and not href.endswith("/fmim/"):
-                    full_url = urljoin(BASE_URL, href)
-                    text = clean_text(link.get_text())
-                    if text and full_url not in [e["url"] for e in entries]:
+                text = clean_text(link.get_text())
+
+                # Skip empty or navigation links
+                if not text or len(text) < 3:
+                    continue
+
+                # Match flora page links (flora_*.html or direct /fmim/ links)
+                if "flora" in href.lower() or "/fmim/" in href:
+                    # Resolve relative URLs
+                    full_url = urljoin(intro_url, href)
+
+                    # Skip the intro page itself and index
+                    if "introduccion" in full_url.lower() or full_url == index_url:
+                        continue
+
+                    # Avoid duplicates
+                    if full_url not in [e["url"] for e in entries]:
                         entries.append({
                             "url": full_url,
                             "text": text
                         })
 
-            # Also add the main index page
-            entries.insert(0, {
-                "url": index_url,
-                "text": "Introducción"
-            })
+            # Also try the main index page for any additional links
+            index_content = await self.browser.get_page_content(index_url)
+            index_soup = BeautifulSoup(index_content, "lxml")
+
+            for link in index_soup.find_all("a", href=True):
+                href = link.get("href", "")
+                text = clean_text(link.get_text())
+
+                if not text or len(text) < 3:
+                    continue
+
+                # Look for links containing "Flora" in the text (Flora Maya, Flora Kiliwa, etc.)
+                if "Flora" in text or "flora" in href.lower():
+                    full_url = urljoin(index_url, href)
+
+                    # Skip intro and index
+                    if "introduccion" in full_url.lower() or full_url == index_url:
+                        continue
+
+                    if full_url not in [e["url"] for e in entries]:
+                        entries.append({
+                            "url": full_url,
+                            "text": text
+                        })
 
         except Exception as e:
             logger.error(f"Error scraping flora index: {e}")

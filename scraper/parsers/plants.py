@@ -423,21 +423,32 @@ class PlantsParser:
         logger.info(f"Saved: {filepath}")
         return filepath
 
-    async def scrape_all(self, progress_file: Path = None, include_fungi: bool = True) -> int:
+    async def scrape_all(
+        self,
+        progress_file: Path = None,
+        include_fungi: bool = True,
+        include_popular_names: bool = True,
+    ) -> int:
         """
         Scrape all plant entries.
 
         Args:
             progress_file: Optional file to track progress
             include_fungi: Whether to also scrape fungi
+            include_popular_names: Whether to also scrape plants by popular name
 
         Returns:
             Number of entries scraped
         """
         from ..utils import load_progress, save_progress
 
-        # Get all URLs
+        # Get all URLs by botanical name
         entries = await self.get_all_plant_urls(by_botanical=True)
+
+        # Also get plants by popular name
+        if include_popular_names:
+            popular_entries = await self.get_all_plant_urls(by_botanical=False)
+            entries.extend(popular_entries)
 
         if include_fungi:
             fungi = await self.get_fungi_urls(by_botanical=True)

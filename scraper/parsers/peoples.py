@@ -58,7 +58,8 @@ class PeoplesParser:
         letters = "abcdefghijklmnopqrstuvwxyz"
 
         for letter in letters:
-            index_url = f"{BASE_URL}/mtpim/terminos-entrada.php?letra={letter}"
+            # Use the correct URL pattern: /terminos-entrada.php?opcion=ipi&letra={letter}
+            index_url = f"{BASE_URL}/terminos-entrada.php?opcion=ipi&letra={letter}"
             logger.info(f"Scraping peoples index: letter {letter.upper()}")
 
             try:
@@ -67,6 +68,7 @@ class PeoplesParser:
 
                 for link in soup.find_all("a", href=True):
                     href = link.get("href", "")
+                    # Match links to mtpim/termino.php with l=2 parameter
                     if "termino.php" in href and "l=2" in href:
                         # Use index_url as base to correctly resolve relative URLs
                         full_url = urljoin(index_url, href)
