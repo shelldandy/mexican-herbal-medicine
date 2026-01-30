@@ -30,7 +30,136 @@ training/
 └── README.md                  # This file
 ```
 
-## Quick Start
+---
+
+## AMD GPU Setup (RX 7900 XTX)
+
+The RX 7900 XTX has 24GB VRAM, which is sufficient for QLoRA training. AMD GPUs require ROCm instead of CUDA.
+
+### Step 1: Install ROCm
+
+```bash
+# Ubuntu 22.04/24.04 - Add AMD ROCm repository
+wget https://repo.radeon.com/amdgpu-install/6.0/ubuntu/jammy/amdgpu-install_6.0.60000-1_all.deb
+sudo apt install ./amdgpu-install_6.0.60000-1_all.deb
+sudo amdgpu-install --usecase=rocm
+
+# Add user to render and video groups
+sudo usermod -aG render,video $USER
+
+# Reboot required
+sudo reboot
+```
+
+Verify installation:
+
+```bash
+rocm-smi  # Should show your GPU
+```
+
+### Step 2: Install PyTorch for ROCm
+
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
+
+# Install PyTorch with ROCm support (check https://pytorch.org for latest)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.0
+
+# Verify
+python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))"
+```
+
+### Step 3: Install Training Dependencies
+
+```bash
+# Install bitsandbytes for ROCm (community build)
+pip install bitsandbytes-rocm
+
+# If bitsandbytes-rocm isn't available, you may need to build from source:
+# git clone https://github.com/arlo-phoenix/bitsandbytes-rocm-5.6
+# cd bitsandbytes-rocm-5.6
+# pip install .
+
+# Install remaining dependencies
+pip install transformers datasets accelerate peft trl wandb pyyaml
+```
+
+### Step 4: Clone and Prepare
+
+```bash
+git clone <your-repo-url> herbolaria
+cd herbolaria
+
+# Generate training data
+python -m training.data_preparation.generate_qa --data-dir data/ --output training/training_samples.jsonl
+
+# Export dataset
+python -m training.data_preparation.export_dataset \
+    --template-samples training/training_samples.jsonl \
+    --output data/herbolaria_training
+```
+
+### Step 5: Configure for AMD
+
+Edit `training/configs/qlora_config.yaml`:
+
+```yaml
+# Disable Flash Attention (not available on ROCm)
+memory:
+  use_flash_attention_2: false
+
+# Keep other settings the same - 24GB VRAM is sufficient
+```
+
+### Step 6: Train
+
+```bash
+python training/train.py --config training/configs/qlora_config.yaml --no_wandb
+```
+
+### AMD-Specific Troubleshooting
+
+**"No GPU detected"**
+
+```bash
+# Check ROCm sees the GPU
+rocm-smi
+
+# Set HIP visible devices
+export HIP_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=0  # PyTorch uses CUDA env vars
+```
+
+**bitsandbytes errors**
+
+If bitsandbytes doesn't work with ROCm, you can train without 4-bit quantization (requires more VRAM but 24GB should be enough):
+
+```bash
+# Modify train.py or use full precision LoRA
+# Remove quantization_config from model loading
+```
+
+Alternatively, use GPTQ quantization which has better ROCm support:
+
+```bash
+pip install auto-gptq
+```
+
+**Memory issues**
+
+```bash
+# Monitor VRAM usage
+watch -n 1 rocm-smi
+
+# Reduce batch size if needed
+python training/train.py --batch_size 1
+```
+
+---
+
+## Quick Start (NVIDIA GPUs)
 
 ### 1. Install Dependencies
 
@@ -107,6 +236,8 @@ python training/scripts/serve_model.py --model_path models/herbolaria-dasd-4b-me
 python training/scripts/serve_model.py --model_path models/herbolaria-dasd-4b-merged --mode gradio --port 7860
 ```
 
+---
+
 ## Training Configuration
 
 The default configuration in `configs/qlora_config.yaml` uses:
@@ -120,7 +251,8 @@ The default configuration in `configs/qlora_config.yaml` uses:
 
 | Option          | VRAM | Notes                               |
 | --------------- | ---- | ----------------------------------- |
-| RTX 4090        | 24GB | Consumer GPU, suitable for training |
+| RTX 4090        | 24GB | NVIDIA, CUDA                        |
+| RX 7900 XTX     | 24GB | AMD, ROCm (see AMD section above)   |
 | Cloud A10G      | 24GB | ~$1-2/hr on cloud providers         |
 | Cloud A100-40GB | 40GB | Faster training, ~$3-5/hr           |
 
@@ -136,6 +268,8 @@ training:
 sft:
   max_seq_length: 1024
 ```
+
+---
 
 ## Integration with RAG App
 
@@ -168,6 +302,8 @@ client = VLLMClient(base_url="http://localhost:8000/v1")
 response = client.generate("¿Qué plantas se usan para la diabetes?")
 ```
 
+---
+
 ## Data Format
 
 Training samples use the chat format with chain-of-thought reasoning:
@@ -191,6 +327,8 @@ Training samples use the chat format with chain-of-thought reasoning:
 }
 ```
 
+---
+
 ## Evaluation Metrics
 
 The evaluation script (`scripts/evaluate.py`) measures:
@@ -205,6 +343,8 @@ Benchmark questions cover:
 - Cultural syndromes (susto, mal de ojo)
 - Historical knowledge
 - Indigenous medicine traditions
+
+---
 
 ## Troubleshooting
 
@@ -239,9 +379,13 @@ wandb login
 export WANDB_API_KEY=your_key
 ```
 
+---
+
 ## References
 
 - [How to finetune Qwen - Complete Guide 2025](https://apatero.com/blog/how-to-finetune-qwen-complete-guide-2025)
 - [Fine-tune LLMs in 2025 with Hugging Face](https://www.philschmid.de/fine-tune-llms-in-2025)
 - [DASD-4B-Thinking Model Card](https://huggingface.co/Alibaba-Apsara/DASD-4B-Thinking)
 - [QLoRA Paper](https://arxiv.org/abs/2305.14314)
+- [ROCm Documentation](https://rocm.docs.amd.com/)
+- [PyTorch ROCm](https://pytorch.org/get-started/locally/)

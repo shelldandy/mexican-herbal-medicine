@@ -1,0 +1,108 @@
+# QLoRA Training Configuration for AMD GPUs (RX 7900 XTX)
+#
+# This config is optimized for AMD ROCm with 24GB VRAM.
+# Key differences from NVIDIA config:
+#   - Flash Attention disabled (not supported on ROCm)
+#   - Uses eager attention implementation
+#
+# Usage:
+#   python training/train.py --config training/configs/qlora_config_amd.yaml --no_wandb
+
+# Model configuration
+model:
+  name: "Alibaba-Apsara/DASD-4B-Thinking"
+  trust_remote_code: true
+  torch_dtype: "bfloat16"
+
+# Quantization for QLoRA (4-bit)
+# Note: Requires bitsandbytes-rocm or compatible ROCm build
+quantization:
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_use_double_quant: true
+
+# LoRA configuration
+lora:
+  r: 64
+  lora_alpha: 128
+  lora_dropout: 0.05
+  bias: "none"
+  task_type: "CAUSAL_LM"
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+# Dataset configuration
+dataset:
+  path: "data/herbolaria_training"
+  train_split: "train"
+  val_split: "validation"
+  chat_template: "qwen"
+  max_seq_length: 2048
+  packing: false
+
+# Training arguments
+training:
+  output_dir: "models/herbolaria-dasd-4b-lora"
+  num_train_epochs: 3
+  per_device_train_batch_size: 2
+  per_device_eval_batch_size: 2
+  gradient_accumulation_steps: 8  # Effective batch size = 16
+  gradient_checkpointing: true
+
+  # Learning rate schedule
+  learning_rate: 2.0e-4
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+
+  # Optimizer
+  optim: "paged_adamw_8bit"
+
+  # Precision - bfloat16 works on RDNA3
+  bf16: true
+  tf32: false  # TF32 is NVIDIA-specific
+
+  # Logging
+  logging_steps: 10
+  logging_first_step: true
+
+  # Evaluation
+  eval_strategy: "steps"
+  eval_steps: 100
+
+  # Checkpointing
+  save_strategy: "steps"
+  save_steps: 100
+  save_total_limit: 3
+
+  # Best model selection
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+
+  # Misc
+  seed: 42
+  dataloader_num_workers: 4
+  remove_unused_columns: false
+
+  # Disable wandb by default for local training
+  report_to: "none"  # Change to "wandb" or "tensorboard" if needed
+
+# SFTTrainer specific settings
+sft:
+  max_seq_length: 2048
+  packing: false
+  dataset_text_field: null
+
+# Memory optimization for AMD
+memory:
+  # Flash Attention is NOT supported on ROCm - must be false
+  use_flash_attention_2: false
+  optimizer_offload: false
