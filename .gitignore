@@ -26,3 +26,7 @@ index/
 .env
 .venv/
 venv/
+
+# Training generated data
+training/*.jsonl
+models/
