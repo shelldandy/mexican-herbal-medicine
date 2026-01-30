@@ -1,8 +1,61 @@
-# Herbolaria - UNAM Traditional Mexican Medicine Scraper
+# Herbolaria - UNAM Traditional Mexican Medicine
 
-A Python scraper for the [UNAM Digital Library of Traditional Mexican Medicine](http://www.medicinatradicionalmexicana.unam.mx/), which contains encyclopedic information about traditional medicine practices, medicinal plants, and indigenous healing knowledge from Mexico.
+A Python scraper and RAG (Retrieval-Augmented Generation) application for the [UNAM Digital Library of Traditional Mexican Medicine](http://www.medicinatradicionalmexicana.unam.mx/), which contains encyclopedic information about traditional medicine practices, medicinal plants, and indigenous healing knowledge from Mexico.
 
-## Features
+## RAG Application
+
+Query the scraped data using natural language with your own API keys.
+
+### Quick Start
+
+1. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Build the search index (requires `OPENAI_API_KEY` environment variable):
+
+   ```bash
+   export OPENAI_API_KEY=your-key-here
+   python -m app.indexer --build
+   ```
+
+3. Run the application:
+
+   ```bash
+   streamlit run app/main.py
+   ```
+
+4. In your browser:
+   - Select your LLM provider (OpenAI or Anthropic)
+   - Enter your API key
+   - Ask questions in Spanish about traditional Mexican medicine
+
+### Supported Models
+
+**OpenAI:**
+
+- GPT-4o (most capable)
+- GPT-4o Mini (faster)
+
+**Anthropic:**
+
+- Claude Sonnet 4 (balanced)
+- Claude 3.5 Haiku (faster)
+
+Note: When using Anthropic, you also need an OpenAI API key for generating embeddings.
+
+### Example Questions
+
+- ¿Qué plantas se usan para tratar la diabetes?
+- ¿Cómo usan los mayas las plantas medicinales?
+- ¿Qué es el temascal y para qué se usa?
+- ¿Cuáles son los usos medicinales del nopal?
+
+---
+
+## Scraper
 
 - Scrapes all 4 main sections of the library:
   - **DEMTM** - Diccionario Enciclopédico de la Medicina Tradicional Mexicana (Encyclopedia Dictionary)

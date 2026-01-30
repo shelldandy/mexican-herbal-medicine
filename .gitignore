@@ -13,6 +13,9 @@ data/
 scraper.log
 .progress/
 
+# RAG index
+index/
+
 # IDE
 .vscode/
 .idea/
