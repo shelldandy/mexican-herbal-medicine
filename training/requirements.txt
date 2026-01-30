@@ -1,0 +1,34 @@
+# Core ML dependencies
+torch>=2.1.0
+transformers>=4.40.0
+datasets>=2.19.0
+accelerate>=0.29.0
+
+# Parameter-efficient finetuning
+peft>=0.10.0
+bitsandbytes>=0.43.0
+
+# Training utilities
+trl>=0.8.0  # SFTTrainer
+
+# Logging and monitoring
+wandb>=0.16.0
+
+# Configuration
+pyyaml>=6.0
+
+# Optional: Flash Attention (requires CUDA 11.6+)
+# flash-attn>=2.5.0  # Install separately: pip install flash-attn --no-build-isolation
+
+# Optional: vLLM for serving (requires CUDA)
+# vllm>=0.4.0
+
+# Optional: Gradio for web interface
+# gradio>=4.0.0
+
+# Optional: LLM augmentation
+# anthropic>=0.25.0
+# openai>=1.0.0
+
+# Development
+# pytest>=8.0.0
