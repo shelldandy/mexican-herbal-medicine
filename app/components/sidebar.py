@@ -1,8 +1,16 @@
 """Sidebar component for settings and API key input."""
 
+import os
+
 import streamlit as st
+from dotenv import load_dotenv
 
 from ..query_engine import MODELS
+
+load_dotenv()
+
+DEFAULT_OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
+DEFAULT_ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 
 def render_sidebar() -> dict:
@@ -27,9 +35,11 @@ def render_sidebar() -> dict:
 
         st.divider()
 
+        default_key = DEFAULT_OPENAI_KEY if provider == "openai" else DEFAULT_ANTHROPIC_KEY
         api_key = st.text_input(
             f"API Key de {'OpenAI' if provider == 'openai' else 'Anthropic'}",
             type="password",
+            value=default_key,
             help="Tu clave API (no se almacena)",
         )
 
@@ -42,6 +52,7 @@ def render_sidebar() -> dict:
             openai_key_for_embeddings = st.text_input(
                 "API Key de OpenAI (para embeddings)",
                 type="password",
+                value=DEFAULT_OPENAI_KEY,
                 help="Necesaria para generar embeddings con Anthropic",
             )
 
