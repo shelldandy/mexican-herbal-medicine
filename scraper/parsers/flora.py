@@ -52,6 +52,22 @@ class FloraParser:
         index_url = f"{BASE_URL}/fmim/"
         intro_url = f"{BASE_URL}/fmim/introduccion.html"
 
+        # Known flora monograph patterns - these are the expected indigenous flora studies
+        known_monographs = [
+            ("flora_cochimi", "Flora Cochimí"),
+            ("flora_cucapa", "Flora Cucapá"),
+            ("flora_kiliwa", "Flora Kiliwa"),
+            ("flora_kumiai", "Flora Kumiai"),
+            ("flora_paipai", "Flora Pai-pai"),
+            ("flora_maya", "Flora Maya"),
+            ("flora_nahua", "Flora Nahua"),
+            ("flora_zapoteca", "Flora Zapoteca"),
+            ("flora_mixe", "Flora Mixe"),
+            ("flora_mixteca", "Flora Mixteca"),
+            ("flora_mazateca", "Flora Mazateca"),
+            ("flora_chinanteca", "Flora Chinanteca"),
+        ]
+
         logger.info("Scraping flora index and introduction page")
 
         try:
@@ -61,7 +77,15 @@ class FloraParser:
                 "text": "Introducción"
             })
 
-            # Parse the introduction page to find all flora monograph links
+            # Try known monograph URLs directly
+            for monograph_slug, monograph_name in known_monographs:
+                monograph_url = f"{BASE_URL}/fmim/{monograph_slug}.html"
+                entries.append({
+                    "url": monograph_url,
+                    "text": monograph_name
+                })
+
+            # Parse the introduction page to find additional flora monograph links
             content = await self.browser.get_page_content(intro_url)
             soup = BeautifulSoup(content, "lxml")
 

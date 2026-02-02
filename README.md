@@ -213,6 +213,46 @@ rm -rf data/.progress/
 
 The scraper includes a configurable delay between requests (default: 1.5 seconds) to be respectful to the server. Please do not reduce this significantly.
 
+## Data Quality Scripts
+
+The `scripts/` directory contains utilities for auditing and cleaning scraped data:
+
+### Audit Script
+
+Check for data quality issues:
+
+```bash
+python scripts/audit_data_gaps.py
+```
+
+This detects:
+
+- Missing `family` fields in plant files
+- Files in accented letter folders (á, é, í, etc.)
+- Navigation artifacts in content
+- Invalid files (empty filenames, whitespace-only titles)
+- Broken cross-reference links
+- Flora section completeness
+
+Use `--json` for machine-readable output.
+
+### Cleanup Script
+
+Fix common data issues:
+
+```bash
+# Preview changes (dry run)
+python scripts/cleanup_data.py --all --dry-run
+
+# Apply all fixes
+python scripts/cleanup_data.py --all
+
+# Individual operations
+python scripts/cleanup_data.py --delete-invalid      # Remove invalid files
+python scripts/cleanup_data.py --normalize-names     # Fix filenames with spaces
+python scripts/cleanup_data.py --clean-navigation    # Remove navigation artifacts
+```
+
 ## License
 
 This scraper is provided for research and educational purposes. The content from the UNAM Digital Library is subject to their terms of use. As stated on their website:

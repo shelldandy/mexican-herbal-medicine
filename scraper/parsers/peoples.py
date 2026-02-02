@@ -157,6 +157,25 @@ class PeoplesParser:
             "subsections": {}
         }
 
+        # Navigation patterns to skip
+        nav_patterns = [
+            r"^BDMTM\s*>>\s*(?:APMTM|MTPIM|DEMTM|FMIM)",
+            r"^Inicio\s*$",
+            r"^Regresar\s*$",
+            r"^Imprimir\s*$",
+            r"^\[\s*La población\s*\]",
+            r"^\[\s*Los recursos humanos\s*\]",
+            r"^\[\s*Las demandas de atención\s*\]",
+            r"^\[\s*Descripción de demandas\s*\]",
+        ]
+
+        # Footer patterns to remove from text
+        footer_patterns = [
+            r"Biblioteca digital con fines de investigación y divulgación\.[^.]*\.",
+            r"Los conocimientos y la información original de esta publicación[^.]*\.",
+            r"2009 © D\.R\. Biblioteca Digital de la Medicina Tradicional Mexicana\. Hecho en México\.",
+        ]
+
         paragraphs = []
         current_subsection = None
         current_subsection_content = []
@@ -164,6 +183,22 @@ class PeoplesParser:
         for elem in content.find_all(["p", "div", "h2", "h3", "h4", "strong", "b", "table", "ul", "ol"]):
             text = clean_text(elem.get_text())
 
+            if not text:
+                continue
+
+            # Skip navigation elements
+            skip_elem = False
+            for nav_pattern in nav_patterns:
+                if re.match(nav_pattern, text):
+                    skip_elem = True
+                    break
+            if skip_elem:
+                continue
+
+            # Remove footer text from content
+            for footer_pattern in footer_patterns:
+                text = re.sub(footer_pattern, "", text)
+            text = text.strip()
             if not text:
                 continue
 

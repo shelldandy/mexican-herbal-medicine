@@ -220,6 +220,26 @@ class PlantsParser:
                             entry["botanical_name"] = botanical
                             break
 
+            # Fallback family extraction from content patterns
+            if not entry["family"]:
+                # Try pattern: **Familia:** FamilyName
+                family_match = re.search(r'\*\*Familia:\*\*\s*([^\n*]+)', full_text)
+                if family_match:
+                    entry["family"] = family_match.group(1).strip()
+
+                # Try pattern: "Familia: FamilyName" or "Familia FamilyName"
+                if not entry["family"]:
+                    family_match = re.search(r'Familia[:\s]+([A-Z][a-z]+(?:aceae|ae|eae))\b', full_text)
+                    if family_match:
+                        entry["family"] = family_match.group(1).strip()
+
+                # Try extracting from section content if present
+                if not entry["family"] and "Sinonimia botánica" in entry["sections"]:
+                    section_text = entry["sections"]["Sinonimia botánica"]
+                    family_match = re.search(r'([A-Z][a-z]+(?:aceae|ae|eae))\b', section_text)
+                    if family_match:
+                        entry["family"] = family_match.group(1).strip()
+
             # Find image - look for links to images in /imagenes/
             for link in main_content.find_all("a", href=True):
                 href = link.get("href", "")

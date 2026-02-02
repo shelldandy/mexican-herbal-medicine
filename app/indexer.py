@@ -118,20 +118,30 @@ def load_documents(data_dir: Path = DATA_DIR) -> list[Document]:
         if file_path.name.startswith("."):
             continue
 
+        # Skip files with empty stems (e.g., ".md")
+        if not file_path.stem:
+            continue
+
         content = file_path.read_text(encoding="utf-8")
         metadata, body = parse_frontmatter(content)
+
+        # Skip files with empty or whitespace-only titles
+        title = metadata.get("title", file_path.stem)
+        if not title or (isinstance(title, str) and not title.strip()):
+            continue
 
         section = detect_section(file_path)
         subsection = detect_subsection(file_path)
         relative_path = str(file_path.relative_to(data_dir))
 
-        letter_match = re.search(r"/([a-z])/", relative_path)
-        letter = letter_match.group(1) if letter_match else ""
+        # Match single letter folders including accented characters and misc
+        letter_match = re.search(r"/([a-záéíóúñčšüɨ]|misc)/", relative_path, re.IGNORECASE)
+        letter = letter_match.group(1).lower() if letter_match else ""
 
         doc_metadata = {
             "file_path": relative_path,
             "section": section,
-            "title": metadata.get("title", file_path.stem),
+            "title": title,  # Use already-validated title
             "source": metadata.get("source", ""),
             "letter": letter,
         }
